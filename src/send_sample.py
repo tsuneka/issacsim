@@ -1,3 +1,5 @@
+import isaacsim
+isaacsim.initialize()
 from omni.isaac.kit import SimulationApp
 simulation_app = SimulationApp({"headless": True})
 
