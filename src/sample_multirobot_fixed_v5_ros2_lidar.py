@@ -75,7 +75,11 @@ SPACING = 3.0
 
 LIDAR_CONFIG = "Example_Rotary"   # built-in RTX lidar config name
 LIDAR_REL_POS = (0.25, 0.0, 0.35) # relative to carter root
-LIDAR_REL_RPY = (0.0, 0.0, 0.0)   # degrees
+# IMPORTANT:
+# IsaacSensorCreateRtxLidar expects a **quaternion** (pxr.Gf.Quatd) for orientation.
+# If you pass Euler angles (Vec3), you'll get:
+#   expected 'GfQuatd', got 'GfVec3d'
+LIDAR_REL_RPY_DEG = (0.0, 0.0, 0.0)  # roll, pitch, yaw in degrees
 
 # Publish topics:
 TOPIC_FMT = "/carter_{i}/pointcloud"
@@ -89,6 +93,33 @@ def _enable_ros2_domain_time():
     # Many ROS2 consumers like Nav2 expect /clock when using use_sim_time:=true.
     # If you need it, you can add an OmniGraph pipeline, but for PointCloud2 only it isn't mandatory.
     pass
+
+
+def _quat_from_rpy_deg(roll_deg: float, pitch_deg: float, yaw_deg: float) -> Gf.Quatd:
+    """Convert roll/pitch/yaw (degrees) -> pxr.Gf.Quatd.
+
+    IsaacSensorCreateRtxLidar requires a quaternion (GfQuatd) for orientation.
+    """
+    import math
+
+    r = math.radians(roll_deg)
+    p = math.radians(pitch_deg)
+    y = math.radians(yaw_deg)
+
+    cr = math.cos(r * 0.5)
+    sr = math.sin(r * 0.5)
+    cp = math.cos(p * 0.5)
+    sp = math.sin(p * 0.5)
+    cy = math.cos(y * 0.5)
+    sy = math.sin(y * 0.5)
+
+    # Z (yaw) * Y (pitch) * X (roll)
+    w = cy * cp * cr + sy * sp * sr
+    x = cy * cp * sr - sy * sp * cr
+    yq = sy * cp * sr + cy * sp * cr
+    z = sy * cp * cr - cy * sp * sr
+
+    return Gf.Quatd(w, Gf.Vec3d(x, yq, z))
 
 
 def _get_carter_usd() -> str:
@@ -144,10 +175,10 @@ def _spawn_carter_with_lidar(i: int, env_path: str, carter_usd: str):
         omni.kit.commands.execute(
             "IsaacSensorCreateRtxLidar",
             path=lidar_path,
-            parent=carter_path,
+            parent=None,
             config=LIDAR_CONFIG,
-            translation=LIDAR_REL_POS,
-            orientation=LIDAR_REL_RPY,
+            translation=Gf.Vec3d(*LIDAR_REL_POS),
+            orientation=_quat_from_rpy_deg(*LIDAR_REL_RPY_DEG),
         )
 
     # Replicator render product from the lidar prim
