@@ -1,46 +1,62 @@
-# send_sample.py
 from isaacsim import SimulationApp
-
-# 1) SimulationApp を最初に起動
-simulation_app = SimulationApp({"headless": True})
-
-# 2) core API を import（起動後でOK）
-from isaacsim.core.api.world import World
-from isaacsim.core.api.articulation import Articulation
-from isaacsim.core.utils.stage import add_reference_to_stage
+simulation_app = SimulationApp({"headless": False})
 
 import numpy as np
-import time
 
-# World 作成
-world = World(stage_units_in_meters=1.0)
+from isaacsim.core.api.world import World
+from isaacsim.core.utils.stage import add_reference_to_stage
+from isaacsim.storage.native import get_assets_root_path
+from isaacsim.core.prims import SingleArticulation
+from isaacsim.core.api.controllers.articulation_controller import ArticulationController
+from isaacsim.core.utils.types import ArticulationAction
 
-ROBOT_USD = "/Isaac/Robots/Franka/franka.usd"
-robots = []
 
-# 複数ロボット配置
-for i in range(10):
-    prim_path = f"/World/Robot_{i}"
-    add_reference_to_stage(ROBOT_USD, prim_path)
+def main():
+    world = World(stage_units_in_meters=1.0)
 
-    robot = Articulation(
-        prim_path=prim_path,
-        name=f"robot_{i}",
-        position=np.array([i * 1.2, 0.0, 0.0])
-    )
-    robots.append(robot)
+    assets_root = get_assets_root_path()
+    if assets_root is None:
+        raise RuntimeError("Could not find Isaac Sim assets folder (get_assets_root_path returned None).")
 
-world.reset()
+    franka_usd = assets_root + "/Isaac/Robots/Franka/franka.usd"
 
-# メインループ
-for step in range(1000):
-    world.step(render=False)
+    robots = []
+    controllers = []
 
-    for i, robot in enumerate(robots):
-        # 簡単な sin 動作
-        target_q = 0.2 * np.sin(0.01 * step + i) * np.ones(robot.num_dof)
-        robot.set_joint_positions(target_q)
+    # 10台を /World/Franka_00 ... に配置
+    for i in range(10):
+        prim_path = f"/World/Franka_{i:02d}"
+        add_reference_to_stage(usd_path=franka_usd, prim_path=prim_path)
 
-    time.sleep(0.01)
+        robot = SingleArticulation(prim_path=prim_path, name=f"franka_{i:02d}")
+        robots.append(robot)
 
-simulation_app.close()
+    # 重要：reset 後に articulation が初期化される
+    world.reset()
+
+    # コントローラ生成（各ロボットに紐づく）
+    for r in robots:
+        controllers.append(ArticulationController(r))
+
+    # 各ロボットに違う目標を送る（例：joint0 をロボット番号でずらす）
+    t = 0.0
+    dt = 1.0 / 60.0
+
+    while simulation_app.is_running():
+        world.step(render=True)
+
+        t += dt
+        for i, r in enumerate(robots):
+            dof = r.num_dof
+            target = np.zeros(dof, dtype=np.float32)
+
+            # 例：各ロボットで位相が違う sin 指令（joint0だけ動かす）
+            target[0] = 0.8 * np.sin(t + 0.4 * i)
+
+            action = ArticulationAction(joint_positions=target)
+            controllers[i].apply_action(action)
+
+
+if __name__ == "__main__":
+    main()
+    simulation_app.close()
