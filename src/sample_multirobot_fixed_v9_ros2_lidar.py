@@ -66,19 +66,20 @@ def _enable_extension(ext_name: str) -> None:
 
 def _assets_carter_usd() -> str:
     """
-    Return a Carter USD path.
-    - Prefer local assets root from get_assets_root_path().
-    - Fall back to the NVIDIA hosted HTTPS asset (may fail if your env blocks external HTTPS).
+    Isaac Sim 4.5: Carterは carter_v2 ではなく nova_carter.usd が基本。
+    - get_assets_root_path() が取れればそこを優先
+    - 取れなければ hosted (https) を試す（ネットが必要）
     """
+    from isaacsim.storage.native import get_assets_root_path  # moved here in newer Isaac Sim stacks
     root = get_assets_root_path()
-    if root:
-        # Typical path layout (depends on your assets installation)
-        # e.g. omniverse://localhost/NVIDIA/Assets/Isaac/4.5
-        candidate = f"{root}/Isaac/Robots/Carter/carter_v2.usd"
-        return candidate
 
-    # fallback (requires external network access)
-    return "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Carter/carter_v2.usd"
+    if root:
+        # 典型: omniverse://localhost/NVIDIA/Assets/Isaac/4.5
+        return f"{root}/Isaac/Robots/Carter/nova_carter.usd"
+
+    # Hosted fallback（外部ネットワークが通る場合のみ）
+    return "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Carter/nova_carter.usd"
+
 
 
 def _make_env_paths(i: int) -> Tuple[str, str]:
