@@ -38,7 +38,6 @@ from isaacsim import SimulationApp
 simulation_app = SimulationApp({"headless": False})
 
 # Enable ROS2 + RTX lidar extensions explicitly (prevents "node type interface not found")
-import omni.kit.app
 
 ext_mgr = omni.kit.app.get_app().get_extension_manager()
 for ext_name in [
@@ -57,20 +56,21 @@ for ext_name in [
             print(f"[WARN] Could not enable extension {ext_name}: {e}")
 
 # Now import Isaac Sim APIs that depend on enabled extensions
-from omni.isaac.core import World
-from omni.isaac.core.utils.stage import add_reference_to_stage, get_current_stage
-from omni.isaac.core.utils.prims import create_prim, set_prim_attribute_value, is_prim_path_valid
-from omni.isaac.core.utils.nucleus import get_assets_root_path
 from pxr import UsdGeom, Gf
-
-import omni.replicator.core as rep
-import omni.kit.commands
+from isaacsim.core.api import World
+from isaacsim.core.prims import XFormPrim
+from isaacsim.core.utils.stage import add_reference_to_stage, get_current_stage
+from isaacsim.core.utils.nucleus import get_assets_root_path
+from isaacsim.core.utils.extensions import enable_extension
+from isaacsim.core.prims import SingleArticulation
+from isaacsim.core.utils.types import ArticulationAction
 
 # --------------------------------------------------------------------------------------
 # Config
 # --------------------------------------------------------------------------------------
-NUM_ROBOTS = 6  # increase when stable (RTX lidar is heavy)
-GRID = 3
+NUM_ROBOTS = 10  # number of Carter robots to spawn
+# Arrange env origins in a near-square grid so 10 robots don't overlap
+GRID = math.ceil(math.sqrt(NUM_ROBOTS))
 SPACING = 3.0
 
 LIDAR_CONFIG = "Example_Rotary"   # built-in RTX lidar config name
@@ -135,7 +135,6 @@ def _get_carter_usd() -> str:
         "Could not resolve assets root. Start Isaac Sim with assets available, "
         "or set ISAACSIM_ASSETS_ROOT to your local Isaac assets directory."
     )
-
 
 def _set_xform_translation(prim_path: str, xyz: np.ndarray):
     stage = get_current_stage()
