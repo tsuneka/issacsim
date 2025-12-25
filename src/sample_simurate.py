@@ -7,6 +7,18 @@ from typing import List, Tuple
 import rclpy
 import omni
 
+from isaacsim.simulation_app import SimulationApp
+
+# -----------------------------------------------------------------------------
+# Start Kit first (IMPORTANT: do this before importing omni/pxr modules)
+# -----------------------------------------------------------------------------
+CONFIG = {
+    "headless": False,
+    "renderer": "RayTracedLighting",  # safe default; change if you want
+}
+simulation_app = SimulationApp(CONFIG)
+
+
 from isaacsim.core.api import World
 from isaacsim.core.prims import SingleArticulation
 
