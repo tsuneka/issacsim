@@ -4,9 +4,6 @@
 from types import SimpleNamespace
 from typing import List, Tuple
 
-import rclpy
-
-
 from isaacsim.simulation_app import SimulationApp
 
 # -----------------------------------------------------------------------------
@@ -18,13 +15,13 @@ CONFIG = {
 }
 simulation_app = SimulationApp(CONFIG)
 
-
+import rclpy
+import omni
 from isaacsim.core.api import World
 from isaacsim.core.prims import SingleArticulation
 
 from ros2_sample import CarterWheelCmdNode, CarterPubNode
-from sample_multirobot_ros2_lidar import simulation_app, _assets_carter_usd, _make_env_paths, _spawn_carter_with_lidar
-import omni
+from sample_multirobot_ros2_lidar import _assets_carter_usd, _make_env_paths, _spawn_carter_with_lidar
 
 def _enable_ros2_bridge() -> None:
     app = omni.kit.app.get_app()
