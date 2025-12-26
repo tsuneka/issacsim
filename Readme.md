@@ -10,8 +10,7 @@ ls # Ensure that a directory named docker_env exists.
 You edit USERNAME in .env file. Name your username as you like.
 ## Docker build and run
 Build a docker environment to run isaacsim. I created the docker environment by referring to the following cite:
-<https://zenn.dev/eochair/articles/isaacsim_tutorial>
-
+<https://zenn.dev/eochair/articles/isaacsim_tutorial>  
 <https://docs.isaacsim.omniverse.nvidia.com/4.5.0/installation/index.html>
 ```
 cd docker_env/
