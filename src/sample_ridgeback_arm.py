@@ -83,7 +83,7 @@ def _find_articulation_root(stage, root_path: str) -> str | None:
 def _find_articulation_root_any(stage, name_hint: str | None = None) -> tuple[str | None, list[str]]:
     roots: list[str] = []
     for prim in Usd.PrimRange(stage.GetPseudoRoot()):
-        if prim.HasAPI(UsdPhysics.ArticulationRootAPI) or prim.HasAPI(PhysxSchema.PhysxArticulationRootAPI) or prim.HasAPI(PhysxSchema.PhysxArticulationAPI):
+        if prim.HasAPI(UsdPhysics.ArticulationRootAPI) or prim.HasAPI(PhysxSchema.PhysxArticulationAPI) or prim.HasAPI(PhysxSchema.PhysxArticulationAPI):
             roots.append(str(prim.GetPath()))
 
     if not roots:
