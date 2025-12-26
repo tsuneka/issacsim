@@ -18,6 +18,7 @@ CONFIG = {"headless": False, "renderer": "RayTracedLighting"}
 simulation_app = SimulationApp(CONFIG)
 
 import omni
+from pxr import UsdPhysics, PhysxSchema
 from isaacsim.core.api import World
 from isaacsim.core.prims import SingleArticulation
 from isaacsim.core.utils import stage as stage_utils
@@ -53,6 +54,22 @@ def _usd_candidates(robot_kind: str, assets_root: str) -> List[str]:
         ]
     raise ValueError("robot_kind must be 'ridgeback_franka' or 'ridgeback_ur5'")
 
+def _find_articulation_root(stage, root_path: str) -> str | None:
+    root_prim = stage.GetPrimAtPath(root_path)
+    if not root_prim or not root_prim.IsValid():
+        return None
+
+    def _is_articulation(prim) -> bool:
+        return prim.HasAPI(UsdPhysics.ArticulationRootAPI) or prim.HasAPI(PhysxSchema.PhysxArticulationAPI)
+
+    if _is_articulation(root_prim):
+        return str(root_prim.GetPath())
+
+    for prim in root_prim.GetDescendants():
+        if _is_articulation(prim):
+            return str(prim.GetPath())
+
+    return None
 
 def _find_wheel_groups(robot: SingleArticulation) -> Tuple[List[int], List[int]]:
     # Split wheel joints into left/right groups based on names.
@@ -92,7 +109,15 @@ def main() -> None:
     usd_candidates = _usd_candidates(robot_kind, assets_root)
     _try_add_reference(usd_candidates, prim_path)
 
-    robot = SingleArticulation(prim_path=prim_path, name=robot_kind)
+    stage = omni.usd.get_context().get_stage()
+    art_path = _find_articulation_root(stage, prim_path)
+    if art_path is None:
+        raise RuntimeError(
+            f"No articulation root found under {prim_path}. "
+            "Check the USD or adjust the prim path candidates."
+        )
+
+    robot = SingleArticulation(prim_path=art_path, name=robot_kind)
     world.scene.add(robot)
 
     world.reset()
