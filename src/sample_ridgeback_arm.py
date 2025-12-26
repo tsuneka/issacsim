@@ -130,7 +130,7 @@ def main() -> None:
     world = World(stage_units_in_meters=1.0)
     world.scene.add_default_ground_plane()
 
-    prim_path = "/ridgeback"
+    prim_path = "/World/ridgeback"
     usd_candidates = _usd_candidates(robot_kind, assets_root)
     _try_add_reference(usd_candidates, prim_path)
 
