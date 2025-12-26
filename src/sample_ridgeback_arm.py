@@ -18,7 +18,7 @@ CONFIG = {"headless": False, "renderer": "RayTracedLighting"}
 simulation_app = SimulationApp(CONFIG)
 
 import omni
-from pxr import UsdPhysics, PhysxSchema
+from pxr import Usd, UsdPhysics, PhysxSchema
 from isaacsim.core.api import World
 from isaacsim.core.prims import SingleArticulation
 from isaacsim.core.utils import stage as stage_utils
@@ -65,11 +65,14 @@ def _find_articulation_root(stage, root_path: str) -> str | None:
     if _is_articulation(root_prim):
         return str(root_prim.GetPath())
 
-    for prim in root_prim.GetDescendants():
+    for prim in Usd.PrimRange(root_prim):
+        if prim == root_prim:
+            continue
         if _is_articulation(prim):
             return str(prim.GetPath())
 
     return None
+
 
 def _find_wheel_groups(robot: SingleArticulation) -> Tuple[List[int], List[int]]:
     # Split wheel joints into left/right groups based on names.
